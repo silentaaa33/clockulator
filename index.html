@@ -2,12 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>PWA Sunflower Clockulator</title>
-    <!-- Load Tailwind CSS (kept in head for immediate styling) -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- PWA Manifest Link -->
     <link rel="manifest" id="manifest-link">
 
     <style>
@@ -16,23 +14,44 @@
             font-family: 'Inter', sans-serif;
             background-color: #fefce8; /* Lightest yellow, like sunshine */
         }
-        /* Mobile optimization for fixed-size flower */
+
+        /* ------------------------------------------------------------------- */
+        /* --- MOBILE OPTIMIZATION FIX START: Dynamic Flower Scaling --- */
+        /* ------------------------------------------------------------------- */
+
         #flower-assembly {
+            /* Set a maximum width based on viewport width (e.g., 90% of screen) */
             max-width: 90vw;
             max-height: 90vw;
             aspect-ratio: 1 / 1;
+            /* New base size for larger screens, slightly smaller than the original 400px */
+            --flower-size: 350px; 
+            width: var(--flower-size);
+            height: var(--flower-size);
+            
+            /* Media query for very small screens (iPhone SE 3 is 375px wide) */
+            /* This makes the flower fit tightly inside the screen's main container padding */
+            @media screen and (max-width: 400px) {
+                /* 100vw minus p-6 (24px) on each side of the main container */
+                --flower-size: calc(100vw - 48px);
+                width: var(--flower-size);
+                height: var(--flower-size);
+            }
         }
+
+        /* Custom CSS to prevent text wrapping in the calculator display */
+        .overflow-x-auto {
+            white-space: nowrap;
+        }
+
+        /* ------------------------------------------------------------------- */
+        /* --- MOBILE OPTIMIZATION FIX END --- */
+        /* ------------------------------------------------------------------- */
     </style>
 </head>
 <body>
-    <!-- Root element for React rendering -->
     <div id="root"></div>
 
-    <!-- 
-        GUARANTEED METHOD: Using dedicated ES Module CDN (esm.sh) and importing 
-        the modern 'react-dom/client' module. This bypasses the global variable 
-        timing issues entirely.
-    -->
     <script type="module">
         // 1. ROBUST MODULE IMPORTS (Using esm.sh for stability)
         import * as React from 'https://esm.sh/react@18.2.0';
@@ -232,7 +251,6 @@
             const buttonBaseClasses = "flower-button absolute rounded-full flex items-center justify-center font-bold transition-all shadow-md cursor-pointer border-[3px] border-white/60 z-10 active:scale-95 active:shadow-lg";
 
             // 1. Center Keypad (Seeds) definition
-            // Restructured to place C and ← back in the center, replacing Memory keys.
             const centerKeypad = React.createElement("div", {
                 id: "seed-center",
                 className: "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 grid grid-cols-3 gap-3 p-5 rounded-full",
@@ -314,7 +332,8 @@
                     top: '50%',
                     marginLeft: '-32.5px',
                     marginTop: '-32.5px',
-                    transform: `rotate(${p.deg}deg) translate(170px) rotate(${p.rotateDeg}deg)`,
+                    // FIX APPLIED: Change fixed '170px' to relative '42.5%' for scaling
+                    transform: `rotate(${p.deg}deg) translate(42.5%) rotate(${p.rotateDeg}deg)`, 
                     backgroundColor: p.active ? colors.petalYellow : colors.inactiveGray,
                     color: p.active ? colors.textDark : 'white',
                     cursor: p.active ? 'pointer' : 'default',
@@ -325,8 +344,6 @@
 
             // 3. Assemble all children for the Main Flower Assembly
             const flowerAssemblyChildren = [
-                // LOGO AREA HAS BEEN REMOVED
-                
                 // CLOCK HANDS
                 React.createElement("div", {
                     ref: hourHandRef,
@@ -387,8 +404,6 @@
                     }, is24Hour ? '24H' : '12H')
                 ), 
                 
-                // Note that Memory is removed, so no Memory Display here.
-
                 React.createElement("div", {
                     className: "text-sm text-gray-500 h-6 pt-1"
                 }, history), 
@@ -397,13 +412,11 @@
                 }, currentValue)
             ),
             
-            /* Removed Utility Buttons: C (Clear) and ← (Backspace) are now in the center keypad */
-
             // Main Flower Assembly (Clock Face + Keypad Ring + Center Keypad)
             React.createElement("div", {
                 id: "flower-assembly",
+                // NO FIXED SIZE STYLE HERE - it's handled by the CSS using viewport units
                 className: "relative rounded-full my-6 mx-auto bg-white border-8 border-amber-900 shadow-xl",
-                style: { width: '400px', height: '400px' }
             }, 
                 // Array of children passed directly
                 flowerAssemblyChildren
