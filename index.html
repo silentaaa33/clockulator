@@ -3,497 +3,446 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PWA Sunflower Clockulator</title>
-    <!-- Load Tailwind CSS (kept in head for immediate styling) -->
+    <title>Sunflower Clockulator</title>
+    <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- PWA Manifest Link -->
-    <link rel="manifest" id="manifest-link">
-
     <style>
-        /* Custom Font and Background */
+        /* Sunflower Aesthetic Colors */
+        :root {
+            --color-petal-yellow: #facc15; /* Amber-400 (Petal/Number) */
+            --color-seed-brown: #713f12; /* Amber-900 (Utility) */
+            --color-accent-green: #34d399; /* Emerald-400 (Operators/Hands) */
+            --color-text-dark: #1f2937; /* Gray-800 */
+            --color-inactive-gray: #4b5563; /* Darker Gray for 10 and 11 */
+        }
+
+        /* Base Body and Container Styling */
         body {
             font-family: 'Inter', sans-serif;
             background-color: #fefce8; /* Lightest yellow, like sunshine */
         }
-        /* Mobile optimization for fixed-size flower */
-        #flower-assembly {
-            max-width: 90vw;
-            max-height: 90vw;
-            aspect-ratio: 1 / 1;
+        .calculator-container {
+            width: 450px; 
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.3);
+            background-color: #fff;
+            padding-bottom: 24px;
+            border-radius: 2rem;
         }
+
+        /* --- Flower Assembly (Main Clock/Keypad Area) --- */
+        #flower-assembly {
+            width: 400px;
+            height: 400px;
+            position: relative;
+            margin: 20px auto;
+            border-radius: 50%;
+            background-color: #fff;
+            border: 8px solid var(--color-seed-brown);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Style for all buttons (shared base) */
+        .flower-button {
+            position: absolute; 
+            border-radius: 9999px; /* Full circle for the petal look */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            font-weight: 700;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            border: 3px solid rgba(255, 255, 255, 0.6);
+            z-index: 10; /* Below the hands */
+        }
+
+        .flower-button:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Active Number Petals (0-9) */
+        .petal-active {
+            width: 65px;
+            height: 65px;
+            background-color: var(--color-petal-yellow);
+            color: var(--color-text-dark);
+        }
+
+        /* Inactive Clock Numbers (10, 11) */
+        .petal-inactive {
+            width: 65px;
+            height: 65px;
+            background-color: var(--color-inactive-gray);
+            color: white;
+            cursor: default;
+            font-size: 1rem;
+        }
+        .petal-inactive:active {
+            transform: scale(1); /* No scale effect */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* --- Clock Hand Styling (Z-index 20+) --- */
+        .hand {
+            position: absolute;
+            left: 50%;
+            bottom: 50%;
+            transform-origin: 50% 100%;
+            border-radius: 5px;
+            z-index: 20; 
+            transition: transform 0.1s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+        #second-hand {
+            width: 2px;
+            height: 40%;
+            background-color: var(--color-accent-green);
+        }
+        #minute-hand {
+            width: 4px;
+            height: 35%;
+            background-color: var(--color-seed-brown);
+        }
+        #hour-hand {
+            width: 6px;
+            height: 25%;
+            background-color: var(--color-text-dark);
+        }
+        /* Center Pin */
+        #center-pin {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background-color: var(--color-accent-green);
+            z-index: 30;
+        }
+
+        /* --- Center Seed Keypad (Fixed 4x3 grid) --- */
+        #seed-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 240px; /* Slightly larger for better spacing */
+            height: 240px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            padding: 20px;
+            border-radius: 9999px;
+            background-color: #a16207; 
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
+            z-index: 15; /* Above petals, below hands */
+        }
+
+        .seed-button {
+            height: 45px;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            transition: transform 0.15s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+        .seed-button:active {
+            transform: scale(0.95);
+        }
+
+        /* Coloring for Seed Buttons */
+        .seed-op { background-color: var(--color-accent-green); color: white; font-size: 1.5rem; }
+        .seed-util { background-color: var(--color-seed-brown); color: white; }
+
+        /* --- Petal (Clock Marker) Positioning --- */
+        
+        #flower-assembly .flower-button {
+            left: 50%; 
+            top: 50%; 
+            margin-left: -32.5px; 
+            margin-top: -32.5px; 
+            transform-origin: 50% 50%; 
+        }
+
+        /* 12 elements * 30 degrees = 360 degrees. Radius 170px */
+        /* Buttons start at nth-child(6) due to the hands and center disc being the first 5 children. */
+        
+        /* 12 o'clock position (Now '0'): nth-child(6) */
+        #flower-assembly .flower-button:nth-child(6) { transform: rotate(270deg) translate(170px) rotate(-270deg); } 
+        /* 1 o'clock: nth-child(7) */
+        #flower-assembly .flower-button:nth-child(7) { transform: rotate(300deg) translate(170px) rotate(-300deg); } 
+        /* 2 o'clock: nth-child(8) */
+        #flower-assembly .flower-button:nth-child(8) { transform: rotate(330deg) translate(170px) rotate(-330deg); } 
+        /* 3 o'clock: nth-child(9) */
+        #flower-assembly .flower-button:nth-child(9) { transform: rotate(0deg) translate(170px) rotate(0deg); } 
+        /* 4 o'clock: nth-child(10) */
+        #flower-assembly .flower-button:nth-child(10) { transform: rotate(30deg) translate(170px) rotate(-30deg); } 
+        /* 5 o'clock: nth-child(11) */
+        #flower-assembly .flower-button:nth-child(11) { transform: rotate(60deg) translate(170px) rotate(-60deg); } 
+        /* 6 o'clock: nth-child(12) */
+        #flower-assembly .flower-button:nth-child(12) { transform: rotate(90deg) translate(170px) rotate(-90deg); } 
+        /* 7 o'clock: nth-child(13) */
+        #flower-assembly .flower-button:nth-child(13) { transform: rotate(120deg) translate(170px) rotate(-120deg); } 
+        /* 8 o'clock: nth-child(14) */
+        #flower-assembly .flower-button:nth-child(14) { transform: rotate(150deg) translate(170px) rotate(-150deg); } 
+        /* 9 o'clock: nth-child(15) */
+        #flower-assembly .flower-button:nth-child(15) { transform: rotate(180deg) translate(170px) rotate(-180deg); } 
+        /* 10 o'clock (Inactive): nth-child(16) */
+        #flower-assembly .flower-button:nth-child(16) { transform: rotate(210deg) translate(170px) rotate(-210deg); } 
+        /* 11 o'clock (Inactive): nth-child(17) */
+        #flower-assembly .flower-button:nth-child(17) { transform: rotate(240deg) translate(170px) rotate(-240deg); } 
+
     </style>
 </head>
-<body>
-    <!-- Root element for React rendering -->
-    <div id="root"></div>
+<body class="flex items-center justify-center min-h-screen p-4">
 
-    <!-- 
-        GUARANTEED METHOD: Using dedicated ES Module CDN (esm.sh) and importing 
-        the modern 'react-dom/client' module. This bypasses the global variable 
-        timing issues entirely.
-    -->
-    <script type="module">
-        // 1. ROBUST MODULE IMPORTS (Using esm.sh for stability)
-        import * as React from 'https://esm.sh/react@18.2.0';
-        // IMPORTANT: Import the /client module for createRoot
-        import * as ReactDOM from 'https://esm.sh/react-dom@18.2.0/client';
-
-        console.log('React and ReactDOM modules imported successfully via esm.sh. Starting App definition.');
+    <!-- Calculator Container -->
+    <div id="calculator" class="calculator-container bg-white rounded-3xl p-6 flex flex-col items-center">
+        <h1 class="text-3xl font-extrabold text-center text-green-700">Sunflower Clockulator</h1>
         
-        // --- CUSTOM STYLING & CONFIGURATION ---
+        <!-- Display Area -->
+        <div id="display" class="bg-gray-100 p-4 mt-3 rounded-xl text-right overflow-x-auto shadow-inner w-full h-24 flex flex-col justify-end relative">
+            <!-- Digital Clock Display -->
+            <div id="clock-display" class="text-xl font-bold text-green-700 absolute top-2 left-4">--:--:--</div>
 
-        const colors = {
-            petalYellow: '#facc15', // Amber-400
-            seedBrown: '#713f12',   // Amber-900
-            accentGreen: '#34d399', // Emerald-400
-            textDark: '#1f2937',    // Gray-800
-            inactiveGray: '#4b5563',// Darker Gray for 10 and 11
-        };
+            <div id="expression-output" class="text-sm text-gray-500 h-6"></div>
+            <div id="current-value" class="text-4xl font-light text-gray-800 tracking-tight">0</div>
+        </div>
 
-        const petalPositions = [
-            { value: '0', deg: 270, rotateDeg: -270, active: true },
-            { value: '1', deg: 300, rotateDeg: -300, active: true },
-            { value: '2', deg: 330, rotateDeg: -330, active: true },
-            { value: '3', deg: 0, rotateDeg: 0, active: true },
-            { value: '4', deg: 30, rotateDeg: -30, active: true },
-            { value: '5', deg: 60, rotateDeg: -60, active: true },
-            { value: '6', deg: 90, rotateDeg: -90, active: true },
-            { value: '7', deg: 120, rotateDeg: -120, active: true },
-            { value: '8', deg: 150, rotateDeg: -150, active: true },
-            { value: '9', deg: 180, rotateDeg: -180, active: true },
-            { value: '10', deg: 210, rotateDeg: -210, active: false },
-            { value: '11', deg: 240, rotateDeg: -240, active: false },
-        ];
+        <!-- Main Flower Assembly (Clock Face + Keypad Ring + Center Keypad) -->
+        <div id="flower-assembly">
 
-        // --- APP COMPONENT DEFINITION ---
-
-        const App = () => {
-            // Calculator state
-            const [expression, setExpression] = React.useState("");
-            const [currentValue, setCurrentValue] = React.useState("0");
-            const [history, setHistory] = React.useState("");
-            const [error, setError] = React.useState(null);
-            
-            // Clock state and refs
-            const [digitalTime, setDigitalTime] = React.useState("--:--:--");
-            const [is24Hour, setIs24Hour] = React.useState(true); // Default 24-hour time
-            const hourHandRef = React.useRef(null);
-            const minuteHandRef = React.useRef(null);
-            const secondHandRef = React.useRef(null);
-
-            // --- VIBRATION LOGIC (Haptic Feedback) ---
-
-            const handleVibrate = () => {
-                // Check if the browser supports the Vibration API (common on mobile)
-                if (navigator.vibrate) {
-                    navigator.vibrate(50); // Short, crisp 50ms vibration
-                }
-            };
-
-            // --- CLOCK LOGIC ---
-
-            const updateTime = React.useCallback(() => {
-                const now = new Date();
-                const hours = now.getHours();
-                const minutes = now.getMinutes();
-                const seconds = now.getSeconds();
-
-                // Digital Clock Update (12h/24h toggle implemented here)
-                const displayHours = is24Hour ? hours : (hours % 12) || 12;
-                const ampm = is24Hour ? '' : (hours >= 12 ? ' PM' : ' AM');
-                // Pad hours to two digits only in 24h mode for common clock aesthetics
-                const paddedDisplayHours = is24Hour ? String(displayHours).padStart(2, '0') : String(displayHours);
-                const paddedMinutes = String(minutes).padStart(2, '0');
-                const paddedSeconds = String(seconds).padStart(2, '0');
-                
-                setDigitalTime(`${paddedDisplayHours}:${paddedMinutes}:${paddedSeconds}${ampm}`);
-
-                // Analog Clock Hand Rotations: 
-                const secondsDegrees = (seconds / 60) * 360;
-                if (secondHandRef.current) {
-                    secondHandRef.current.style.transform = `rotate(${secondsDegrees}deg)`;
-                }
-
-                const minutesDegrees = (minutes / 60) * 360 + (seconds / 60) * 6;
-                if (minuteHandRef.current) {
-                    minuteHandRef.current.style.transform = `rotate(${minutesDegrees}deg)`;
-                }
-
-                const hoursDegrees = (hours % 12) / 12 * 360 + (minutes / 60) * 30;
-                if (hourHandRef.current) {
-                    hourHandRef.current.style.transform = `rotate(${hoursDegrees}deg)`;
-                }
-            }, [is24Hour]);
-
-            // Toggle function for the time format
-            const toggleTimeFormat = () => {
-                handleVibrate();
-                setIs24Hour(prev => !prev);
-            };
-
-            // Effect to start the clock interval
-            React.useEffect(() => {
-                updateTime();
-                const intervalId = setInterval(updateTime, 1000);
-                return () => clearInterval(intervalId);
-            }, [updateTime]); 
-
-            // --- CALCULATOR LOGIC ---
-
-            const updateDisplay = React.useCallback((expr) => {
-                setHistory(expr);
-                if (expr === "") {
-                    setCurrentValue("0");
-                    return;
-                }
-                // Try to display the last number segment of the expression
-                const lastPartMatch = expr.match(/([0-9.]+|[-])?$/);
-                const lastPart = lastPartMatch ? lastPartMatch[0] : '';
-                setCurrentValue(lastPart || expr);
-            }, []);
-
-            const press = (value) => {
-                handleVibrate();
-                let newExpression = expression;
-
-                if (!isNaN(parseFloat(value)) || value === '.') {
-                    newExpression += value;
-                } else if (['+', '-', '*', '/', '(', ')'].includes(value)) {
-                    const lastChar = newExpression.slice(-1);
-
-                    if (['+', '-', '*', '/'].includes(value)) {
-                        // Prevent consecutive operators, except for allowing negative signs
-                        if (!['+', '-', '*', '/'].includes(lastChar) || lastChar === '(') {
-                            newExpression += value;
-                        }
-                    } else {
-                        newExpression += value;
-                    }
-                }
-                setExpression(newExpression);
-                updateDisplay(newExpression);
-            };
-
-            const clearDisplay = () => {
-                handleVibrate();
-                setExpression("");
-                setHistory("");
-                setCurrentValue("0");
-                setError(null);
-            };
-
-            const backspace = () => {
-                handleVibrate();
-                const newExpression = expression.slice(0, -1);
-                setExpression(newExpression);
-                updateDisplay(newExpression);
-            };
-
-            const showErrorModal = (message) => {
-                setError(message);
-            };
-
-            const hideErrorModal = () => {
-                handleVibrate();
-                setError(null);
-                clearDisplay();
-            };
-
-            const equals = () => {
-                handleVibrate();
-                if (!expression) return;
-                try {
-                    const safeExpression = expression.replace(/×/g, '*').replace(/÷/g, '/');
-
-                    if (safeExpression.includes('/0')) {
-                        throw new Error("division by zero");
-                    }
-
-                    const result = new Function('return ' + safeExpression)();
-                    const formattedResult = parseFloat(result.toFixed(10)).toString();
-
-                    setHistory(`${expression} =`); 
-                    setCurrentValue(formattedResult);
-                    setExpression(formattedResult); 
-                } catch (e) {
-                    if (e instanceof SyntaxError) {
-                        showErrorModal("Invalid input or incomplete equation. Check your parentheses and operators.");
-                    } else if (e.message.includes("division by zero")) {
-                        showErrorModal("A busy bee can't divide by zero petals! The hive demands numbers.");
-                    } else {
-                        showErrorModal("That calculation wilted! Please check your syntax.");
-                    }
-                }
-            };
-            
-            // --- UI RENDERING (JSX converted to React.createElement) ---
-
-            const buttonBaseClasses = "flower-button absolute rounded-full flex items-center justify-center font-bold transition-all shadow-md cursor-pointer border-[3px] border-white/60 z-10 active:scale-95 active:shadow-lg";
-
-            // 1. Center Keypad (Seeds) definition
-            // Restructured to place C and ← back in the center, replacing Memory keys.
-            const centerKeypad = React.createElement("div", {
-                id: "seed-center",
-                className: "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 grid grid-cols-3 gap-3 p-5 rounded-full",
-                style: {
-                    width: '240px',
-                    height: '240px',
-                    backgroundColor: '#a16207',
-                    boxShadow: 'inset 0 0 10px rgba(0, 0, 0, 0.3)'
-                }
-            }, 
-                // Row 1: C, Backspace, Divide
-                React.createElement("button", {
-                    onClick: clearDisplay,
-                    className: "h-[45px] rounded-full text-white shadow-lg active:scale-95",
-                    style: { backgroundColor: '#ef4444', fontSize: '1.2rem' } // Red for Clear
-                }, "C"), 
-                React.createElement("button", {
-                    onClick: backspace,
-                    className: "h-[45px] rounded-full text-white shadow-lg active:scale-95",
-                    style: { backgroundColor: '#f97316', fontSize: '1.2rem' } // Orange for Backspace
-                }, "\u2190"), 
-                React.createElement("button", {
-                    onClick: () => press('/'),
-                    className: "h-[45px] rounded-full text-white shadow-lg active:scale-95",
-                    style: { backgroundColor: colors.accentGreen, fontSize: '1.5rem' }
-                }, "/"), 
-                
-                // Row 2: Multiply, Subtract, Add
-                React.createElement("button", {
-                    onClick: () => press('*'),
-                    className: "h-[45px] rounded-full text-white shadow-lg active:scale-95",
-                    style: { backgroundColor: colors.accentGreen, fontSize: '1.5rem' }
-                }, "*"), 
-                React.createElement("button", {
-                    onClick: () => press('-'),
-                    className: "h-[45px] rounded-full text-white shadow-lg active:scale-95",
-                    style: { backgroundColor: colors.accentGreen, fontSize: '1.5rem' }
-                }, "-"), 
-                React.createElement("button", {
-                    onClick: () => press('+'),
-                    className: "h-[45px] rounded-full text-white shadow-lg active:scale-95",
-                    style: { backgroundColor: colors.accentGreen, fontSize: '1.5rem' }
-                }, "+"), 
-                
-                // Row 3: Parentheses, Decimal
-                React.createElement("button", {
-                    onClick: () => press('('),
-                    className: "h-[45px] rounded-full text-white shadow-lg active:scale-95",
-                    style: { backgroundColor: colors.seedBrown, fontSize: '1.2rem' }
-                }, "("), 
-                React.createElement("button", {
-                    onClick: () => press(')'),
-                    className: "h-[45px] rounded-full text-white shadow-lg active:scale-95",
-                    style: { backgroundColor: colors.seedBrown, fontSize: '1.2rem' }
-                }, ")"), 
-                React.createElement("button", {
-                    onClick: () => press('.'),
-                    className: "h-[45px] rounded-full text-white shadow-lg active:scale-95",
-                    style: { backgroundColor: colors.seedBrown, fontSize: '1.2rem' }
-                }, "."), 
-
-                // Row 4 (span 3): Equals
-                React.createElement("button", {
-                    onClick: equals,
-                    className: "h-[45px] rounded-full text-white shadow-lg active:scale-95",
-                    style: { gridColumn: 'span 3 / span 3', backgroundColor: colors.accentGreen, fontSize: '1.5rem' }
-                }, "=")
-            );
-
-            // 2. Outer Petal Ring (Numbers 0-11) definition
-            const petalButtons = petalPositions.map((p, index) => React.createElement("button", {
-                key: p.value,
-                onClick: p.active ? () => press(p.value) : undefined,
-                className: buttonBaseClasses,
-                style: {
-                    width: '65px',
-                    height: '65px',
-                    left: '50%',
-                    top: '50%',
-                    marginLeft: '-32.5px',
-                    marginTop: '-32.5px',
-                    transform: `rotate(${p.deg}deg) translate(170px) rotate(${p.rotateDeg}deg)`,
-                    backgroundColor: p.active ? colors.petalYellow : colors.inactiveGray,
-                    color: p.active ? colors.textDark : 'white',
-                    cursor: p.active ? 'pointer' : 'default',
-                    fontSize: p.active ? '1.3rem' : '1rem'
-                },
-                disabled: !p.active
-            }, p.value));
-
-            // 3. Assemble all children for the Main Flower Assembly
-            const flowerAssemblyChildren = [
-                // LOGO AREA HAS BEEN REMOVED
-                
-                // CLOCK HANDS
-                React.createElement("div", {
-                    ref: hourHandRef,
-                    className: "absolute left-1/2 bottom-1/2 rounded-md transform origin-bottom",
-                    style: { width: '6px', height: '25%', backgroundColor: colors.textDark, zIndex: 20, transition: 'transform 0.1s cubic-bezier(0.19, 1, 0.22, 1)' }
-                }), 
-                React.createElement("div", {
-                    ref: minuteHandRef,
-                    className: "absolute left-1/2 bottom-1/2 rounded-md transform origin-bottom",
-                    style: { width: '4px', height: '35%', backgroundColor: colors.seedBrown, zIndex: 20, transition: 'transform 0.1s cubic-bezier(0.19, 1, 0.22, 1)' }
-                }), 
-                React.createElement("div", {
-                    ref: secondHandRef,
-                    className: "absolute left-1/2 bottom-1/2 rounded-md transform origin-bottom",
-                    style: { width: '2px', height: '40%', backgroundColor: colors.accentGreen, zIndex: 20, transition: 'transform 0.1s cubic-bezier(0.19, 1, 0.22, 1)' }
-                }), 
-                
-                // Center Pin (Ensures the clock hands' pivot point is covered)
-                React.createElement("div", {
-                    className: "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-emerald-500 z-30"
-                }),
-
-                // CENTER DISC KEYPAD
-                centerKeypad,
-
-                // SPREAD THE PETAL BUTTONS
-                ...petalButtons 
-            ];
+            <!-- CLOCK HANDS (Children 1, 2, 3) -->
+            <div id="hour-hand" class="hand"></div>
+            <div id="minute-hand" class="hand"></div>
+            <div id="second-hand" class="hand"></div>
+            <div id="center-pin"></div> <!-- Child 4 -->
 
 
-            // 4. Final App Return
-            return React.createElement("div", {
-                className: "flex items-center justify-center min-h-screen p-4 bg-yellow-50 font-inter"
-            },
-            // Calculator Container
-            React.createElement("div", {
-                className: "w-full max-w-sm sm:max-w-md bg-white rounded-3xl p-6 flex flex-col items-center shadow-2xl",
-                style: { boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.3)' }
-            },
-            // H1
-            React.createElement("h1", {
-                className: "text-3xl font-extrabold text-center text-emerald-700 mb-2"
-            }, "Sunflower Clockulator"),
+            <!-- CENTER DISC KEYPAD (Child 5) -->
+            <div id="seed-center">
+                <!-- Row 1: Utility & Operator -->
+                <button onclick="clearDisplay()" class="seed-button seed-util">C</button>
+                <button onclick="backspace()" class="seed-button seed-util">&larr;</button>
+                <button onclick="press('/')" class="seed-button seed-op">/</button>
 
-            // Display Area
-            React.createElement("div", {
-                className: "bg-gray-100 p-4 mt-3 rounded-xl text-right overflow-x-auto shadow-inner w-full h-28 flex flex-col justify-end relative"
-            }, 
-                // Digital Clock Display & Toggle
-                React.createElement("div", {
-                    className: "text-lg font-bold text-emerald-600 absolute top-2 left-4 flex items-center"
-                }, 
-                    digitalTime,
-                    // 12h/24h Toggle Button
-                    React.createElement("button", {
-                        onClick: toggleTimeFormat,
-                        className: `ml-2 px-2 py-0.5 text-xs font-semibold rounded-full transition-colors ${is24Hour ? 'bg-emerald-500 text-white' : 'bg-gray-300 text-gray-700'} active:scale-95`
-                    }, is24Hour ? '24H' : '12H')
-                ), 
-                
-                // Note that Memory is removed, so no Memory Display here.
+                <!-- Row 2: Operators -->
+                <button onclick="press('*')" class="seed-button seed-op">*</button>
+                <button onclick="press('-')" class="seed-button seed-op">-</button>
+                <button onclick="press('+')" class="seed-button seed-op">+</button>
 
-                React.createElement("div", {
-                    className: "text-sm text-gray-500 h-6 pt-1"
-                }, history), 
-                React.createElement("div", {
-                    className: "text-4xl font-light text-gray-800 tracking-tight"
-                }, currentValue)
-            ),
-            
-            /* Removed Utility Buttons: C (Clear) and ← (Backspace) are now in the center keypad */
+                <!-- Row 3: Decimal and Parentheses -->
+                <button onclick="press('.')" class="seed-button seed-util">.</button>
+                <button onclick="press('(')" class="seed-button seed-util">(</button>
+                <button onclick="press(')')" class="seed-button seed-util">)</button>
 
-            // Main Flower Assembly (Clock Face + Keypad Ring + Center Keypad)
-            React.createElement("div", {
-                id: "flower-assembly",
-                className: "relative rounded-full my-6 mx-auto bg-white border-8 border-amber-900 shadow-xl",
-                style: { width: '400px', height: '400px' }
-            }, 
-                // Array of children passed directly
-                flowerAssemblyChildren
-            ),
+                <!-- Row 4: Equals (Spans 3 columns) -->
+                <button onclick="equals()" class="seed-button seed-op" style="grid-column: span 3 / span 3;">=</button>
+            </div>
 
-            // BRANDING AREA (Updated for AGCO Co.)
-            React.createElement("div", {
-                className: "w-full text-center text-sm text-gray-500 mt-4 pt-4 border-t border-gray-100"
-            }, 
-                React.createElement("p", null, "Powered by ", React.createElement("span", {
-                    className: "font-semibold text-emerald-600"
-                }, "AGCO Co.")), 
-                React.createElement("p", {
-                    className: "text-xs mt-1"
-                    }, "Farmer first.")
-                ),
 
-                // Custom Modal for Errors
-                error && React.createElement("div", {
-                    className: "fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50"
-                }, React.createElement("div", {
-                    className: "bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full"
-                }, 
-                    React.createElement("h2", {
-                        className: "text-xl font-bold text-red-600 mb-3"
-                    }, "Wilted Calculation!"), 
-                    React.createElement("p", {
-                        className: "text-gray-700 mb-4"
-                    }, error), 
-                    React.createElement("button", {
-                        onClick: hideErrorModal,
-                        className: "w-full bg-emerald-500 text-white py-2 rounded-lg hover:bg-emerald-600 transition"
-                    }, "Okay, Reset")
-                ))
-            ));
-        };
+            <!-- OUTER PETAL RING (Starts at Child 6) -->
+            <!-- Button Order (Sequential from 0 to 11, clockwise) -->
+            <!-- 12 o'clock position is now 0 (Active) -->
+            <button onclick="press('0')" class="flower-button petal-active">0</button> 
+            <!-- 1-9 remain active and in their place -->
+            <button onclick="press('1')" class="flower-button petal-active">1</button>
+            <button onclick="press('2')" class="flower-button petal-active">2</button>
+            <button onclick="press('3')" class="flower-button petal-active">3</button>
+            <button onclick="press('4')" class="flower-button petal-active">4</button>
+            <button onclick="press('5')" class="flower-button petal-active">5</button>
+            <button onclick="press('6')" class="flower-button petal-active">6</button>
+            <button onclick="press('7')" class="flower-button petal-active">7</button>
+            <button onclick="press('8')" class="flower-button petal-active">8</button>
+            <button onclick="press('9')" class="flower-button petal-active">9</button>
+            <!-- 10 and 11 are INACTIVE/gray clock markers -->
+            <button class="flower-button petal-inactive">10</button>
+            <button class="flower-button petal-inactive">11</button>
+
+        </div>
+
+        <!-- Custom Modal for Errors (to replace alert()) -->
+        <div id="error-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4">
+            <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full">
+                <h2 class="text-xl font-bold text-red-600 mb-3">Wilted Calculation!</h2>
+                <p id="error-message" class="text-gray-700 mb-4"></p>
+                <button onclick="hideErrorModal()" class="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition">Okay, Reset</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // DOM Elements
+        const currentValueElement = document.getElementById('current-value');
+        const expressionOutputElement = document.getElementById('expression-output');
+        const clockDisplayElement = document.getElementById('clock-display');
+        const errorModal = document.getElementById('error-modal');
+        const errorMessageElement = document.getElementById('error-message');
         
-        // --- FINAL APPLICATION INITIALIZATION LOGIC ---
-
-        const manifestContent = {
-            name: "Sunflower Clockulator PWA",
-            short_name: "SunClock",
-            description: "A beautiful calculator and analog clock in one.",
-            start_url: "./pwa_sunflower_clock.html",
-            display: "standalone",
-            orientation: "portrait",
-            background_color: "#fefce8",
-            theme_color: "#facc15",
-            icons: [
-                {
-                    src: "https://placehold.co/192x192/facc15/713f12?text=S",
-                    sizes: "192x192",
-                    type: "image/png"
-                },
-                {
-                    src: "https://placehold.co/512x512/facc15/713f12?text=S",
-                    sizes: "512x512",
-                    type: "image/png"
-                }
-            ]
-        };
+        // Clock Hand Elements
+        const hourHand = document.getElementById('hour-hand');
+        const minuteHand = document.getElementById('minute-hand');
+        const secondHand = document.getElementById('second-hand');
         
-        // 1. Dynamic PWA Registration
-        try {
-            const manifestBlob = new Blob([JSON.stringify(manifestContent)], { type: 'application/json' });
-            const manifestUrl = URL.createObjectURL(manifestBlob);
-            const manifestLink = document.getElementById('manifest-link');
+        let expression = "";
+
+        // --- CLOCK LOGIC ---
+
+        /**
+         * Updates both the digital and analog clocks.
+         */
+        function updateTime() {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const seconds = now.getSeconds();
+
+            // Digital Clock
+            const paddedHours = String(hours).padStart(2, '0');
+            const paddedMinutes = String(minutes).padStart(2, '0');
+            const paddedSeconds = String(seconds).padStart(2, '0');
+            clockDisplayElement.textContent = `${paddedHours}:${paddedMinutes}:${paddedSeconds}`;
+
+            // Analog Clock Hand Rotations:
+            // IMPORTANT FIX: Removed the incorrect + 270 degree offset. 
+            // 0 degrees rotation is now correctly the 12 o'clock position (straight up).
             
-            if (manifestLink) {
-                manifestLink.setAttribute('href', manifestUrl);
-                console.log('PWA Manifest created and linked.');
-            }
-        } catch (e) {
-            console.error("Failed to create/link manifest:", e);
+            // Second Hand: 6 degrees per second ($360 / 60$)
+            const secondsDegrees = (seconds / 60) * 360; 
+            secondHand.style.transform = `rotate(${secondsDegrees}deg)`;
+
+            // Minute Hand: 6 degrees per minute, plus proportional seconds ($360 / 60$)
+            const minutesDegrees = ((minutes / 60) * 360) + ((seconds/60)*6);
+            minuteHand.style.transform = `rotate(${minutesDegrees}deg)`;
+
+            // Hour Hand: 30 degrees per hour, plus proportional minutes ($360 / 12$)
+            // Use hours \% 12 for 12-hour clock
+            const hoursDegrees = ((hours % 12) / 12) * 360 + ((minutes/60)*30);
+            hourHand.style.transform = `rotate(${hoursDegrees}deg)`;
         }
         
-        // 2. REACT RENDERING
-        try {
-            const container = document.getElementById('root');
-            if (container) {
-                // Use the imported createRoot function from the client module
-                const root = ReactDOM.createRoot(container);
-                root.render(React.createElement(App)); 
-                console.log('React App successfully rendered using ES Modules from esm.sh.');
+        // --- CALCULATOR LOGIC ---
+
+        /**
+         * Updates the display with the current input or result.
+         */
+        function updateDisplay() {
+            expressionOutputElement.textContent = expression;
+            
+            if (expression === "") {
+                currentValueElement.textContent = '0';
             } else {
-                console.error("Root container element '#root' not found.");
+                // Heuristic to show only the last number or operator if the expression is long
+                // This improves readability in the limited display space.
+                const lastPartMatch = expression.match(/([0-9.]+)?$/);
+                const lastPart = lastPartMatch ? lastPartMatch[0] : '';
+                currentValueElement.textContent = lastPart || expression; 
             }
-        } catch (e) {
-            console.error("Final React Rendering Error:", e);
         }
+
+        /**
+         * Appends a number or operator to the expression.
+         * @param {string} value The button value.
+         */
+        function press(value) {
+            // Check if the value is a number (from petal or seed)
+            if (!isNaN(parseFloat(value)) || value === '.') {
+                expression += value;
+            } 
+            // Check if the value is an operator or parenthesis
+            else if (['+', '-', '*', '/', '(', ')'].includes(value)) {
+                // Simple operator logic to prevent double operators
+                const lastChar = expression.slice(-1);
+                if (['+', '-', '*', '/'].includes(value)) {
+                    if (!['+', '-', '*', '/', '(', ''].includes(lastChar)) {
+                        expression += value;
+                    }
+                } else {
+                    expression += value;
+                }
+            } 
+            
+            updateDisplay();
+        }
+
+        /**
+         * Deletes the last character from the expression.
+         */
+        function backspace() {
+            expression = expression.slice(0, -1);
+            updateDisplay();
+        }
+
+        /**
+         * Calculates the result of the current expression.
+         */
+        function equals() {
+            try {
+                // Ensure * and / are used for evaluation
+                const safeExpression = expression.replace(/×/g, '*').replace(/÷/g, '/'); 
+                
+                // Use Function constructor for safe dynamic expression evaluation
+                const result = new Function('return ' + safeExpression)();
+                
+                // Format the result to a maximum of 10 decimal places to prevent float issues
+                const formattedResult = parseFloat(result.toFixed(10)).toString();
+
+                expressionOutputElement.textContent = expression + " ="; // Show full calculation
+                currentValueElement.textContent = formattedResult;
+                expression = formattedResult; // Set the result as the new expression to continue calculating
+
+            } catch (e) {
+                if (e instanceof SyntaxError) {
+                    showErrorModal("Invalid input or incomplete equation. Check your parentheses and operators.");
+                } else if (e.message.includes("division by zero")) {
+                    showErrorModal("A busy bee can't divide by zero petals! The hive demands numbers.");
+                } else {
+                    showErrorModal("That calculation wilted! Please check your syntax.");
+                }
+                clearDisplay(); // Clear on error
+            }
+        }
+
+        /**
+         * Clears the display and the expression.
+         */
+        function clearDisplay() {
+            expression = "";
+            currentValueElement.textContent = '0';
+            expressionOutputElement.textContent = '';
+        }
+        
+        /**
+         * Shows the custom error modal with a message.
+         * @param {string} message The error message to display.
+         */
+        function showErrorModal(message) {
+            errorMessageElement.textContent = message;
+            errorModal.classList.remove('hidden');
+        }
+
+        /**
+         * Hides the custom error modal and clears the calculator.
+         */
+        function hideErrorModal() {
+            errorModal.classList.add('hidden');
+            clearDisplay();
+        }
+
+        // Initialize the display and start the clock on load
+        document.addEventListener('DOMContentLoaded', () => {
+            updateDisplay();
+            updateTime();
+            // Start the clock timer
+            setInterval(updateTime, 1000); 
+        });
     </script>
 </body>
 </html>
