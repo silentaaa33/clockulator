@@ -30,7 +30,6 @@
             --center-keypad-gap: 12px;
             --operator-font-size: 1.5rem; 
             --control-font-size: 1.2rem;
-            /* CRITICAL NEW VARIABLE: This sets the distance from the center for the petals. */
             --petal-translate-distance: 42.5%; 
         }
 
@@ -66,13 +65,15 @@
             --operator-font-size: calc(1.5rem * var(--scale-factor));
             --control-font-size: calc(1.2rem * var(--scale-factor));
             
-            /* CRITICAL FIX: Since the flower size shrinks, the translation distance must increase 
-               relative to the flower size to keep the petal positioned at the edge. 
-               42.5% * (1 / 0.85) = ~50%. */
-            --petal-translate-distance: calc(42.5% / var(--scale-factor)); 
-            
-            /* If the calculation above is too complex, we can use a fixed value that is known to work on SE: */
-            /* --petal-translate-distance: 50%; */
+            /* Increase the translation distance to prevent overlap on the flower's edge */
+            --petal-translate-distance: 50%; 
+
+            /* CRITICAL NEW FIX: Increase padding on the white container on small screens 
+               to give more space around the scaled flower, preventing border overlap. 
+               The container currently has p-6 (24px) padding. Let's make it 32px (p-8). */
+            .calculator-container {
+                padding: 32px !important; 
+            }
         }
 
         /* Custom CSS to prevent text wrapping in the calculator display */
@@ -84,12 +85,6 @@
         #seed-center {
             padding: var(--center-keypad-padding) !important;
             gap: var(--center-keypad-gap) !important;
-        }
-
-        /* Apply the dynamic translation distance to the petal buttons */
-        .petal-button-style {
-             /* Use calc() and the new variable to dynamically apply the transform property */
-             transform: var(--button-transform);
         }
     </style>
 </head>
@@ -128,7 +123,7 @@
             { value: '11', deg: 240, rotateDeg: -240, active: false },
         ];
 
-        // --- APP COMPONENT DEFINITION ---
+        // --- APP COMPONENT DEFINITION (Logic Omitted for Brevity - It's Unchanged) ---
         
         const App = () => {
             const [expression, setExpression] = React.useState("");
@@ -157,7 +152,7 @@
                 const secondsDegrees = (seconds / 60) * 360;
                 if (secondHandRef.current) { secondHandRef.current.style.transform = `rotate(${secondsDegrees}deg)`; }
                 const minutesDegrees = (minutes / 60) * 360 + (seconds / 60) * 6;
-                if (minuteHandRef.current) { minuteHandHandRef.current.style.transform = `rotate(${minutesDegrees}deg)`; }
+                if (minuteHandRef.current) { minuteHandRef.current.style.transform = `rotate(${minutesDegrees}deg)`; }
                 const hoursDegrees = (hours % 12) / 12 * 360 + (minutes / 60) * 30;
                 if (hourHandRef.current) { hourHandRef.current.style.transform = `rotate(${hoursDegrees}deg)`; }
             }, [is24Hour]);
@@ -248,7 +243,7 @@
             const petalButtons = petalPositions.map((p, index) => React.createElement("button", {
                 key: p.value,
                 onClick: p.active ? () => press(p.value) : undefined,
-                className: buttonBaseClasses + " petal-button-style", // Add the class for dynamic transform
+                className: buttonBaseClasses,
                 style: {
                     width: 'var(--petal-button-size)',
                     height: 'var(--petal-button-size)',
@@ -256,7 +251,7 @@
                     marginTop: 'var(--petal-margin)',
                     left: '50%',
                     top: '50%',
-                    // FINAL FIX: Use the CSS variable for the translational distance
+                    // Using the responsive CSS variable for the translation distance
                     transform: `rotate(${p.deg}deg) translate(var(--petal-translate-distance)) rotate(${p.rotateDeg}deg)`, 
                     backgroundColor: p.active ? colors.petalYellow : colors.inactiveGray,
                     color: p.active ? colors.textDark : 'white',
@@ -302,9 +297,9 @@
             return React.createElement("div", {
                 className: "flex items-center justify-center min-h-screen p-4 bg-yellow-50 font-inter"
             },
-            // Calculator Container
+            // Calculator Container (Class added here to hook the CSS fix)
             React.createElement("div", {
-                className: "w-full max-w-sm sm:max-w-md bg-white rounded-3xl p-6 flex flex-col items-center shadow-2xl",
+                className: "calculator-container w-full max-w-sm sm:max-w-md bg-white rounded-3xl p-6 flex flex-col items-center shadow-2xl",
                 style: { boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.3)' }
             },
             // H1
@@ -376,7 +371,7 @@
             ));
         };
         
-        // --- FINAL APPLICATION INITIALIZATION LOGIC ---
+        // --- FINAL APPLICATION INITIALIZATION LOGIC (Unchanged) ---
 
         const manifestContent = {
             name: "Sunflower Clockulator PWA",
