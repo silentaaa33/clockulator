@@ -16,11 +16,18 @@
         }
 
         /* ------------------------------------------------------------------- */
-        /* --- MOBILE OPTIMIZATION FIX START: Dynamic Flower Scaling --- */
+        /* --- MOBILE OPTIMIZATION FIX: Dynamic Flower & Element Scaling --- */
         /* ------------------------------------------------------------------- */
 
+        /* Define CSS variables for *all* fixed sizes to easily scale them in media queries */
+        :root {
+            --petal-button-size: 65px;
+            --petal-margin: -32.5px; /* - (var(--petal-button-size) / 2) */
+            --center-keypad-size: 240px;
+            --center-button-height: 45px;
+        }
+
         #flower-assembly {
-            /* Set a maximum width based on viewport width (e.g., 90% of screen) */
             max-width: 90vw;
             max-height: 90vw;
             aspect-ratio: 1 / 1;
@@ -28,15 +35,21 @@
             --flower-size: 350px; 
             width: var(--flower-size);
             height: var(--flower-size);
-            
-            /* Media query for very small screens (iPhone SE 3 is 375px wide) */
-            /* This makes the flower fit tightly inside the screen's main container padding */
-            @media screen and (max-width: 400px) {
-                /* 100vw minus p-6 (24px) on each side of the main container */
-                --flower-size: calc(100vw - 48px);
-                width: var(--flower-size);
-                height: var(--flower-size);
-            }
+        }
+
+        /* Media query for very small screens (iPhone SE 3 is 375px wide) */
+        @media screen and (max-width: 400px) {
+            /* Scale the main flower size */
+            --flower-size: calc(100vw - 48px);
+            width: var(--flower-size);
+            height: var(--flower-size);
+
+            /* Scale the internal fixed elements by ~15% */
+            --scale-factor: 0.85; 
+            --petal-button-size: calc(65px * var(--scale-factor));
+            --petal-margin: calc(-32.5px * var(--scale-factor));
+            --center-keypad-size: calc(240px * var(--scale-factor));
+            --center-button-height: calc(45px * var(--scale-factor));
         }
 
         /* Custom CSS to prevent text wrapping in the calculator display */
@@ -45,7 +58,7 @@
         }
 
         /* ------------------------------------------------------------------- */
-        /* --- MOBILE OPTIMIZATION FIX END --- */
+        /* --- DYNAMIC STYLING HOOKS (Implemented in React below) --- */
         /* ------------------------------------------------------------------- */
     </style>
 </head>
@@ -55,7 +68,6 @@
     <script type="module">
         // 1. ROBUST MODULE IMPORTS (Using esm.sh for stability)
         import * as React from 'https://esm.sh/react@18.2.0';
-        // IMPORTANT: Import the /client module for createRoot
         import * as ReactDOM from 'https://esm.sh/react-dom@18.2.0/client';
 
         console.log('React and ReactDOM modules imported successfully via esm.sh. Starting App definition.');
@@ -88,29 +100,18 @@
         // --- APP COMPONENT DEFINITION ---
 
         const App = () => {
-            // Calculator state
+            // ... (State and Calculator/Clock Logic remain unchanged) ...
             const [expression, setExpression] = React.useState("");
             const [currentValue, setCurrentValue] = React.useState("0");
             const [history, setHistory] = React.useState("");
             const [error, setError] = React.useState(null);
-            
-            // Clock state and refs
             const [digitalTime, setDigitalTime] = React.useState("--:--:--");
-            const [is24Hour, setIs24Hour] = React.useState(true); // Default 24-hour time
+            const [is24Hour, setIs24Hour] = React.useState(true); 
             const hourHandRef = React.useRef(null);
             const minuteHandRef = React.useRef(null);
             const secondHandRef = React.useRef(null);
 
-            // --- VIBRATION LOGIC (Haptic Feedback) ---
-
-            const handleVibrate = () => {
-                // Check if the browser supports the Vibration API (common on mobile)
-                if (navigator.vibrate) {
-                    navigator.vibrate(50); // Short, crisp 50ms vibration
-                }
-            };
-
-            // --- CLOCK LOGIC ---
+            const handleVibrate = () => { if (navigator.vibrate) { navigator.vibrate(50); } };
 
             const updateTime = React.useCallback(() => {
                 const now = new Date();
@@ -118,55 +119,35 @@
                 const minutes = now.getMinutes();
                 const seconds = now.getSeconds();
 
-                // Digital Clock Update (12h/24h toggle implemented here)
                 const displayHours = is24Hour ? hours : (hours % 12) || 12;
                 const ampm = is24Hour ? '' : (hours >= 12 ? ' PM' : ' AM');
-                // Pad hours to two digits only in 24h mode for common clock aesthetics
                 const paddedDisplayHours = is24Hour ? String(displayHours).padStart(2, '0') : String(displayHours);
                 const paddedMinutes = String(minutes).padStart(2, '0');
                 const paddedSeconds = String(seconds).padStart(2, '0');
                 
                 setDigitalTime(`${paddedDisplayHours}:${paddedMinutes}:${paddedSeconds}${ampm}`);
 
-                // Analog Clock Hand Rotations: 
                 const secondsDegrees = (seconds / 60) * 360;
-                if (secondHandRef.current) {
-                    secondHandRef.current.style.transform = `rotate(${secondsDegrees}deg)`;
-                }
+                if (secondHandRef.current) { secondHandRef.current.style.transform = `rotate(${secondsDegrees}deg)`; }
 
                 const minutesDegrees = (minutes / 60) * 360 + (seconds / 60) * 6;
-                if (minuteHandRef.current) {
-                    minuteHandRef.current.style.transform = `rotate(${minutesDegrees}deg)`;
-                }
+                if (minuteHandRef.current) { minuteHandRef.current.style.transform = `rotate(${minutesDegrees}deg)`; }
 
                 const hoursDegrees = (hours % 12) / 12 * 360 + (minutes / 60) * 30;
-                if (hourHandRef.current) {
-                    hourHandRef.current.style.transform = `rotate(${hoursDegrees}deg)`;
-                }
+                if (hourHandRef.current) { hourHandRef.current.style.transform = `rotate(${hoursDegrees}deg)`; }
             }, [is24Hour]);
 
-            // Toggle function for the time format
-            const toggleTimeFormat = () => {
-                handleVibrate();
-                setIs24Hour(prev => !prev);
-            };
+            const toggleTimeFormat = () => { handleVibrate(); setIs24Hour(prev => !prev); };
 
-            // Effect to start the clock interval
             React.useEffect(() => {
                 updateTime();
                 const intervalId = setInterval(updateTime, 1000);
                 return () => clearInterval(intervalId);
             }, [updateTime]); 
 
-            // --- CALCULATOR LOGIC ---
-
             const updateDisplay = React.useCallback((expr) => {
                 setHistory(expr);
-                if (expr === "") {
-                    setCurrentValue("0");
-                    return;
-                }
-                // Try to display the last number segment of the expression
+                if (expr === "") { setCurrentValue("0"); return; }
                 const lastPartMatch = expr.match(/([0-9.]+|[-])?$/);
                 const lastPart = lastPartMatch ? lastPartMatch[0] : '';
                 setCurrentValue(lastPart || expr);
@@ -175,74 +156,37 @@
             const press = (value) => {
                 handleVibrate();
                 let newExpression = expression;
-
-                if (!isNaN(parseFloat(value)) || value === '.') {
-                    newExpression += value;
-                } else if (['+', '-', '*', '/', '(', ')'].includes(value)) {
+                if (!isNaN(parseFloat(value)) || value === '.') { newExpression += value; } 
+                else if (['+', '-', '*', '/', '(', ')'].includes(value)) {
                     const lastChar = newExpression.slice(-1);
-
                     if (['+', '-', '*', '/'].includes(value)) {
-                        // Prevent consecutive operators, except for allowing negative signs
-                        if (!['+', '-', '*', '/'].includes(lastChar) || lastChar === '(') {
-                            newExpression += value;
-                        }
-                    } else {
-                        newExpression += value;
-                    }
+                        if (!['+', '-', '*', '/'].includes(lastChar) || lastChar === '(') { newExpression += value; }
+                    } else { newExpression += value; }
                 }
                 setExpression(newExpression);
                 updateDisplay(newExpression);
             };
 
-            const clearDisplay = () => {
-                handleVibrate();
-                setExpression("");
-                setHistory("");
-                setCurrentValue("0");
-                setError(null);
-            };
-
-            const backspace = () => {
-                handleVibrate();
-                const newExpression = expression.slice(0, -1);
-                setExpression(newExpression);
-                updateDisplay(newExpression);
-            };
-
-            const showErrorModal = (message) => {
-                setError(message);
-            };
-
-            const hideErrorModal = () => {
-                handleVibrate();
-                setError(null);
-                clearDisplay();
-            };
+            const clearDisplay = () => { handleVibrate(); setExpression(""); setHistory(""); setCurrentValue("0"); setError(null); };
+            const backspace = () => { handleVibrate(); const newExpression = expression.slice(0, -1); setExpression(newExpression); updateDisplay(newExpression); };
+            const showErrorModal = (message) => { setError(message); };
+            const hideErrorModal = () => { handleVibrate(); setError(null); clearDisplay(); };
 
             const equals = () => {
                 handleVibrate();
                 if (!expression) return;
                 try {
                     const safeExpression = expression.replace(/×/g, '*').replace(/÷/g, '/');
-
-                    if (safeExpression.includes('/0')) {
-                        throw new Error("division by zero");
-                    }
-
+                    if (safeExpression.includes('/0')) { throw new Error("division by zero"); }
                     const result = new Function('return ' + safeExpression)();
                     const formattedResult = parseFloat(result.toFixed(10)).toString();
-
                     setHistory(`${expression} =`); 
                     setCurrentValue(formattedResult);
                     setExpression(formattedResult); 
                 } catch (e) {
-                    if (e instanceof SyntaxError) {
-                        showErrorModal("Invalid input or incomplete equation. Check your parentheses and operators.");
-                    } else if (e.message.includes("division by zero")) {
-                        showErrorModal("A busy bee can't divide by zero petals! The hive demands numbers.");
-                    } else {
-                        showErrorModal("That calculation wilted! Please check your syntax.");
-                    }
+                    if (e instanceof SyntaxError) { showErrorModal("Invalid input or incomplete equation. Check your parentheses and operators."); } 
+                    else if (e.message.includes("division by zero")) { showErrorModal("A busy bee can't divide by zero petals! The hive demands numbers."); } 
+                    else { showErrorModal("That calculation wilted! Please check your syntax."); }
                 }
             };
             
@@ -255,8 +199,9 @@
                 id: "seed-center",
                 className: "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 grid grid-cols-3 gap-3 p-5 rounded-full",
                 style: {
-                    width: '240px',
-                    height: '240px',
+                    // FIX: Use CSS Variables for responsive sizing
+                    width: 'var(--center-keypad-size)', 
+                    height: 'var(--center-keypad-size)',
                     backgroundColor: '#a16207',
                     boxShadow: 'inset 0 0 10px rgba(0, 0, 0, 0.3)'
                 }
@@ -264,59 +209,59 @@
                 // Row 1: C, Backspace, Divide
                 React.createElement("button", {
                     onClick: clearDisplay,
-                    className: "h-[45px] rounded-full text-white shadow-lg active:scale-95",
-                    style: { backgroundColor: '#ef4444', fontSize: '1.2rem' } // Red for Clear
+                    className: "rounded-full text-white shadow-lg active:scale-95",
+                    style: { height: 'var(--center-button-height)', backgroundColor: '#ef4444', fontSize: '1.2rem' } // Red for Clear
                 }, "C"), 
                 React.createElement("button", {
                     onClick: backspace,
-                    className: "h-[45px] rounded-full text-white shadow-lg active:scale-95",
-                    style: { backgroundColor: '#f97316', fontSize: '1.2rem' } // Orange for Backspace
+                    className: "rounded-full text-white shadow-lg active:scale-95",
+                    style: { height: 'var(--center-button-height)', backgroundColor: '#f97316', fontSize: '1.2rem' } // Orange for Backspace
                 }, "\u2190"), 
                 React.createElement("button", {
                     onClick: () => press('/'),
-                    className: "h-[45px] rounded-full text-white shadow-lg active:scale-95",
-                    style: { backgroundColor: colors.accentGreen, fontSize: '1.5rem' }
+                    className: "rounded-full text-white shadow-lg active:scale-95",
+                    style: { height: 'var(--center-button-height)', backgroundColor: colors.accentGreen, fontSize: '1.5rem' }
                 }, "/"), 
                 
                 // Row 2: Multiply, Subtract, Add
                 React.createElement("button", {
                     onClick: () => press('*'),
-                    className: "h-[45px] rounded-full text-white shadow-lg active:scale-95",
-                    style: { backgroundColor: colors.accentGreen, fontSize: '1.5rem' }
+                    className: "rounded-full text-white shadow-lg active:scale-95",
+                    style: { height: 'var(--center-button-height)', backgroundColor: colors.accentGreen, fontSize: '1.5rem' }
                 }, "*"), 
                 React.createElement("button", {
                     onClick: () => press('-'),
-                    className: "h-[45px] rounded-full text-white shadow-lg active:scale-95",
-                    style: { backgroundColor: colors.accentGreen, fontSize: '1.5rem' }
+                    className: "rounded-full text-white shadow-lg active:scale-95",
+                    style: { height: 'var(--center-button-height)', backgroundColor: colors.accentGreen, fontSize: '1.5rem' }
                 }, "-"), 
                 React.createElement("button", {
                     onClick: () => press('+'),
-                    className: "h-[45px] rounded-full text-white shadow-lg active:scale-95",
-                    style: { backgroundColor: colors.accentGreen, fontSize: '1.5rem' }
+                    className: "rounded-full text-white shadow-lg active:scale-95",
+                    style: { height: 'var(--center-button-height)', backgroundColor: colors.accentGreen, fontSize: '1.5rem' }
                 }, "+"), 
                 
                 // Row 3: Parentheses, Decimal
                 React.createElement("button", {
                     onClick: () => press('('),
-                    className: "h-[45px] rounded-full text-white shadow-lg active:scale-95",
-                    style: { backgroundColor: colors.seedBrown, fontSize: '1.2rem' }
+                    className: "rounded-full text-white shadow-lg active:scale-95",
+                    style: { height: 'var(--center-button-height)', backgroundColor: colors.seedBrown, fontSize: '1.2rem' }
                 }, "("), 
                 React.createElement("button", {
                     onClick: () => press(')'),
-                    className: "h-[45px] rounded-full text-white shadow-lg active:scale-95",
-                    style: { backgroundColor: colors.seedBrown, fontSize: '1.2rem' }
+                    className: "rounded-full text-white shadow-lg active:scale-95",
+                    style: { height: 'var(--center-button-height)', backgroundColor: colors.seedBrown, fontSize: '1.2rem' }
                 }, ")"), 
                 React.createElement("button", {
                     onClick: () => press('.'),
-                    className: "h-[45px] rounded-full text-white shadow-lg active:scale-95",
-                    style: { backgroundColor: colors.seedBrown, fontSize: '1.2rem' }
+                    className: "rounded-full text-white shadow-lg active:scale-95",
+                    style: { height: 'var(--center-button-height)', backgroundColor: colors.seedBrown, fontSize: '1.2rem' }
                 }, "."), 
 
                 // Row 4 (span 3): Equals
                 React.createElement("button", {
                     onClick: equals,
-                    className: "h-[45px] rounded-full text-white shadow-lg active:scale-95",
-                    style: { gridColumn: 'span 3 / span 3', backgroundColor: colors.accentGreen, fontSize: '1.5rem' }
+                    className: "rounded-full text-white shadow-lg active:scale-95",
+                    style: { gridColumn: 'span 3 / span 3', height: 'var(--center-button-height)', backgroundColor: colors.accentGreen, fontSize: '1.5rem' }
                 }, "=")
             );
 
@@ -326,13 +271,14 @@
                 onClick: p.active ? () => press(p.value) : undefined,
                 className: buttonBaseClasses,
                 style: {
-                    width: '65px',
-                    height: '65px',
+                    // FIX: Use CSS Variables for responsive sizing and margin
+                    width: 'var(--petal-button-size)',
+                    height: 'var(--petal-button-size)',
+                    marginLeft: 'var(--petal-margin)',
+                    marginTop: 'var(--petal-margin)',
                     left: '50%',
                     top: '50%',
-                    marginLeft: '-32.5px',
-                    marginTop: '-32.5px',
-                    // FIX APPLIED: Change fixed '170px' to relative '42.5%' for scaling
+                    // Using % for translation ensures it scales with the flower's size
                     transform: `rotate(${p.deg}deg) translate(42.5%) rotate(${p.rotateDeg}deg)`, 
                     backgroundColor: p.active ? colors.petalYellow : colors.inactiveGray,
                     color: p.active ? colors.textDark : 'white',
@@ -415,7 +361,6 @@
             // Main Flower Assembly (Clock Face + Keypad Ring + Center Keypad)
             React.createElement("div", {
                 id: "flower-assembly",
-                // NO FIXED SIZE STYLE HERE - it's handled by the CSS using viewport units
                 className: "relative rounded-full my-6 mx-auto bg-white border-8 border-amber-900 shadow-xl",
             }, 
                 // Array of children passed directly
@@ -497,7 +442,6 @@
         try {
             const container = document.getElementById('root');
             if (container) {
-                // Use the imported createRoot function from the client module
                 const root = ReactDOM.createRoot(container);
                 root.render(React.createElement(App)); 
                 console.log('React App successfully rendered using ES Modules from esm.sh.');
