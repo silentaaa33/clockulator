@@ -44,8 +44,9 @@
 
         /* Media query for very small screens (iPhone SE 3 is ~375px wide) */
         @media screen and (max-width: 400px) {
-            /* Scale the main flower size */
-            --flower-size: calc(100vw - 48px);
+            
+            /* CRITICAL FIX 1: Decrease flower size (64px clearance total) to guarantee space inside the white container */
+            --flower-size: calc(100vw - 64px);
             width: var(--flower-size);
             height: var(--flower-size);
 
@@ -65,14 +66,12 @@
             --operator-font-size: calc(1.5rem * var(--scale-factor));
             --control-font-size: calc(1.2rem * var(--scale-factor));
             
-            /* Increase the translation distance to prevent overlap on the flower's edge */
+            /* Increase the translation distance to prevent petal overlap on the flower's edge */
             --petal-translate-distance: 50%; 
 
-            /* CRITICAL NEW FIX: Increase padding on the white container on small screens 
-               to give more space around the scaled flower, preventing border overlap. 
-               The container currently has p-6 (24px) padding. Let's make it 32px (p-8). */
+            /* CRITICAL FIX 2: Increase padding on the white container for guaranteed space */
             .calculator-container {
-                padding: 32px !important; 
+                padding: 40px !important; /* Use 40px (Tailwind p-10 equivalent) for maximum clearance */
             }
         }
 
@@ -143,12 +142,14 @@
                 const hours = now.getHours();
                 const minutes = now.getMinutes();
                 const seconds = now.getSeconds();
+
                 const displayHours = is24Hour ? hours : (hours % 12) || 12;
                 const ampm = is24Hour ? '' : (hours >= 12 ? ' PM' : ' AM');
                 const paddedDisplayHours = is24Hour ? String(displayHours).padStart(2, '0') : String(displayHours);
                 const paddedMinutes = String(minutes).padStart(2, '0');
                 const paddedSeconds = String(seconds).padStart(2, '0');
                 setDigitalTime(`${paddedDisplayHours}:${paddedMinutes}:${paddedSeconds}${ampm}`);
+
                 const secondsDegrees = (seconds / 60) * 360;
                 if (secondHandRef.current) { secondHandRef.current.style.transform = `rotate(${secondsDegrees}deg)`; }
                 const minutesDegrees = (minutes / 60) * 360 + (seconds / 60) * 6;
@@ -251,7 +252,6 @@
                     marginTop: 'var(--petal-margin)',
                     left: '50%',
                     top: '50%',
-                    // Using the responsive CSS variable for the translation distance
                     transform: `rotate(${p.deg}deg) translate(var(--petal-translate-distance)) rotate(${p.rotateDeg}deg)`, 
                     backgroundColor: p.active ? colors.petalYellow : colors.inactiveGray,
                     color: p.active ? colors.textDark : 'white',
