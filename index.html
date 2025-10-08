@@ -19,47 +19,62 @@
         /* --- MOBILE OPTIMIZATION FIX: Dynamic Flower & Element Scaling --- */
         /* ------------------------------------------------------------------- */
 
-        /* Define CSS variables for *all* fixed sizes to easily scale them in media queries */
+        /* Define CSS variables for *all* fixed sizes and fonts to easily scale them in media queries */
         :root {
             --petal-button-size: 65px;
-            --petal-margin: -32.5px; /* - (var(--petal-button-size) / 2) */
+            --petal-margin: -32.5px;
+            --petal-font-size: 1.3rem; /* New variable for number buttons (0-9) */
             --center-keypad-size: 240px;
             --center-button-height: 45px;
+            --center-keypad-padding: 20px; 
+            --center-keypad-gap: 12px;
+            --operator-font-size: 1.5rem; /* New variable for operators */
+            --control-font-size: 1.2rem; /* New variable for C, () */
         }
 
         #flower-assembly {
             max-width: 90vw;
             max-height: 90vw;
             aspect-ratio: 1 / 1;
-            /* New base size for larger screens, slightly smaller than the original 400px */
             --flower-size: 350px; 
             width: var(--flower-size);
             height: var(--flower-size);
         }
 
-        /* Media query for very small screens (iPhone SE 3 is 375px wide) */
+        /* Media query for very small screens (iPhone SE 3 is ~375px wide) */
         @media screen and (max-width: 400px) {
             /* Scale the main flower size */
             --flower-size: calc(100vw - 48px);
             width: var(--flower-size);
             height: var(--flower-size);
 
-            /* Scale the internal fixed elements by ~15% */
+            /* Scaling Factor */
             --scale-factor: 0.85; 
+
+            /* Scale physical dimensions */
             --petal-button-size: calc(65px * var(--scale-factor));
             --petal-margin: calc(-32.5px * var(--scale-factor));
             --center-keypad-size: calc(240px * var(--scale-factor));
             --center-button-height: calc(45px * var(--scale-factor));
+            --center-keypad-padding: calc(20px * var(--scale-factor));
+            --center-keypad-gap: calc(12px * var(--scale-factor));
+
+            /* --- CRITICAL FIX: Scale the font sizes! --- */
+            --petal-font-size: calc(1.3rem * var(--scale-factor));
+            --operator-font-size: calc(1.5rem * var(--scale-factor));
+            --control-font-size: calc(1.2rem * var(--scale-factor));
         }
 
         /* Custom CSS to prevent text wrapping in the calculator display */
         .overflow-x-auto {
             white-space: nowrap;
         }
-
-        /* ------------------------------------------------------------------- */
-        /* --- DYNAMIC STYLING HOOKS (Implemented in React below) --- */
-        /* ------------------------------------------------------------------- */
+        
+        /* FIX: Override Tailwind gap/padding for the center keypad only (from last fix) */
+        #seed-center {
+            padding: var(--center-keypad-padding) !important;
+            gap: var(--center-keypad-gap) !important;
+        }
     </style>
 </head>
 <body>
@@ -75,11 +90,11 @@
         // --- CUSTOM STYLING & CONFIGURATION ---
 
         const colors = {
-            petalYellow: '#facc15', // Amber-400
-            seedBrown: '#713f12',   // Amber-900
-            accentGreen: '#34d399', // Emerald-400
-            textDark: '#1f2937',    // Gray-800
-            inactiveGray: '#4b5563',// Darker Gray for 10 and 11
+            petalYellow: '#facc15', 
+            seedBrown: '#713f12',   
+            accentGreen: '#34d399', 
+            textDark: '#1f2937',    
+            inactiveGray: '#4b5563',
         };
 
         const petalPositions = [
@@ -97,16 +112,16 @@
             { value: '11', deg: 240, rotateDeg: -240, active: false },
         ];
 
-        // --- APP COMPONENT DEFINITION ---
-
+        // --- APP COMPONENT DEFINITION (Logic Omitted for Brevity - It's Unchanged) ---
+        
         const App = () => {
-            // ... (State and Calculator/Clock Logic remain unchanged) ...
+            // Calculator and Clock state/logic...
             const [expression, setExpression] = React.useState("");
             const [currentValue, setCurrentValue] = React.useState("0");
             const [history, setHistory] = React.useState("");
             const [error, setError] = React.useState(null);
             const [digitalTime, setDigitalTime] = React.useState("--:--:--");
-            const [is24Hour, setIs24Hour] = React.useState(true); 
+            const [is24Hour, setIs24Hour] = React.useState(true);
             const hourHandRef = React.useRef(null);
             const minuteHandRef = React.useRef(null);
             const secondHandRef = React.useRef(null);
@@ -129,10 +144,8 @@
 
                 const secondsDegrees = (seconds / 60) * 360;
                 if (secondHandRef.current) { secondHandRef.current.style.transform = `rotate(${secondsDegrees}deg)`; }
-
                 const minutesDegrees = (minutes / 60) * 360 + (seconds / 60) * 6;
                 if (minuteHandRef.current) { minuteHandRef.current.style.transform = `rotate(${minutesDegrees}deg)`; }
-
                 const hoursDegrees = (hours % 12) / 12 * 360 + (minutes / 60) * 30;
                 if (hourHandRef.current) { hourHandRef.current.style.transform = `rotate(${hoursDegrees}deg)`; }
             }, [is24Hour]);
@@ -156,6 +169,7 @@
             const press = (value) => {
                 handleVibrate();
                 let newExpression = expression;
+
                 if (!isNaN(parseFloat(value)) || value === '.') { newExpression += value; } 
                 else if (['+', '-', '*', '/', '(', ')'].includes(value)) {
                     const lastChar = newExpression.slice(-1);
@@ -197,9 +211,8 @@
             // 1. Center Keypad (Seeds) definition
             const centerKeypad = React.createElement("div", {
                 id: "seed-center",
-                className: "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 grid grid-cols-3 gap-3 p-5 rounded-full",
+                className: "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 grid grid-cols-3 rounded-full",
                 style: {
-                    // FIX: Use CSS Variables for responsive sizing
                     width: 'var(--center-keypad-size)', 
                     height: 'var(--center-keypad-size)',
                     backgroundColor: '#a16207',
@@ -210,58 +223,59 @@
                 React.createElement("button", {
                     onClick: clearDisplay,
                     className: "rounded-full text-white shadow-lg active:scale-95",
-                    style: { height: 'var(--center-button-height)', backgroundColor: '#ef4444', fontSize: '1.2rem' } // Red for Clear
+                    // FIX: Use new CSS variables for height and font size
+                    style: { height: 'var(--center-button-height)', backgroundColor: '#ef4444', fontSize: 'var(--control-font-size)' } 
                 }, "C"), 
                 React.createElement("button", {
                     onClick: backspace,
                     className: "rounded-full text-white shadow-lg active:scale-95",
-                    style: { height: 'var(--center-button-height)', backgroundColor: '#f97316', fontSize: '1.2rem' } // Orange for Backspace
+                    style: { height: 'var(--center-button-height)', backgroundColor: '#f97316', fontSize: 'var(--control-font-size)' } 
                 }, "\u2190"), 
                 React.createElement("button", {
                     onClick: () => press('/'),
                     className: "rounded-full text-white shadow-lg active:scale-95",
-                    style: { height: 'var(--center-button-height)', backgroundColor: colors.accentGreen, fontSize: '1.5rem' }
+                    style: { height: 'var(--center-button-height)', backgroundColor: colors.accentGreen, fontSize: 'var(--operator-font-size)' }
                 }, "/"), 
                 
                 // Row 2: Multiply, Subtract, Add
                 React.createElement("button", {
                     onClick: () => press('*'),
                     className: "rounded-full text-white shadow-lg active:scale-95",
-                    style: { height: 'var(--center-button-height)', backgroundColor: colors.accentGreen, fontSize: '1.5rem' }
+                    style: { height: 'var(--center-button-height)', backgroundColor: colors.accentGreen, fontSize: 'var(--operator-font-size)' }
                 }, "*"), 
                 React.createElement("button", {
                     onClick: () => press('-'),
                     className: "rounded-full text-white shadow-lg active:scale-95",
-                    style: { height: 'var(--center-button-height)', backgroundColor: colors.accentGreen, fontSize: '1.5rem' }
+                    style: { height: 'var(--center-button-height)', backgroundColor: colors.accentGreen, fontSize: 'var(--operator-font-size)' }
                 }, "-"), 
                 React.createElement("button", {
                     onClick: () => press('+'),
                     className: "rounded-full text-white shadow-lg active:scale-95",
-                    style: { height: 'var(--center-button-height)', backgroundColor: colors.accentGreen, fontSize: '1.5rem' }
+                    style: { height: 'var(--center-button-height)', backgroundColor: colors.accentGreen, fontSize: 'var(--operator-font-size)' }
                 }, "+"), 
                 
                 // Row 3: Parentheses, Decimal
                 React.createElement("button", {
                     onClick: () => press('('),
                     className: "rounded-full text-white shadow-lg active:scale-95",
-                    style: { height: 'var(--center-button-height)', backgroundColor: colors.seedBrown, fontSize: '1.2rem' }
+                    style: { height: 'var(--center-button-height)', backgroundColor: colors.seedBrown, fontSize: 'var(--control-font-size)' }
                 }, "("), 
                 React.createElement("button", {
                     onClick: () => press(')'),
                     className: "rounded-full text-white shadow-lg active:scale-95",
-                    style: { height: 'var(--center-button-height)', backgroundColor: colors.seedBrown, fontSize: '1.2rem' }
+                    style: { height: 'var(--center-button-height)', backgroundColor: colors.seedBrown, fontSize: 'var(--control-font-size)' }
                 }, ")"), 
                 React.createElement("button", {
                     onClick: () => press('.'),
                     className: "rounded-full text-white shadow-lg active:scale-95",
-                    style: { height: 'var(--center-button-height)', backgroundColor: colors.seedBrown, fontSize: '1.2rem' }
+                    style: { height: 'var(--center-button-height)', backgroundColor: colors.seedBrown, fontSize: 'var(--control-font-size)' }
                 }, "."), 
 
                 // Row 4 (span 3): Equals
                 React.createElement("button", {
                     onClick: equals,
                     className: "rounded-full text-white shadow-lg active:scale-95",
-                    style: { gridColumn: 'span 3 / span 3', height: 'var(--center-button-height)', backgroundColor: colors.accentGreen, fontSize: '1.5rem' }
+                    style: { gridColumn: 'span 3 / span 3', height: 'var(--center-button-height)', backgroundColor: colors.accentGreen, fontSize: 'var(--operator-font-size)' }
                 }, "=")
             );
 
@@ -271,19 +285,18 @@
                 onClick: p.active ? () => press(p.value) : undefined,
                 className: buttonBaseClasses,
                 style: {
-                    // FIX: Use CSS Variables for responsive sizing and margin
                     width: 'var(--petal-button-size)',
                     height: 'var(--petal-button-size)',
                     marginLeft: 'var(--petal-margin)',
                     marginTop: 'var(--petal-margin)',
                     left: '50%',
                     top: '50%',
-                    // Using % for translation ensures it scales with the flower's size
                     transform: `rotate(${p.deg}deg) translate(42.5%) rotate(${p.rotateDeg}deg)`, 
                     backgroundColor: p.active ? colors.petalYellow : colors.inactiveGray,
                     color: p.active ? colors.textDark : 'white',
                     cursor: p.active ? 'pointer' : 'default',
-                    fontSize: p.active ? '1.3rem' : '1rem'
+                    // CRITICAL FIX: Use CSS variable for responsive font size
+                    fontSize: p.active ? 'var(--petal-font-size)' : '1rem' 
                 },
                 disabled: !p.active
             }, p.value));
@@ -307,7 +320,7 @@
                     style: { width: '2px', height: '40%', backgroundColor: colors.accentGreen, zIndex: 20, transition: 'transform 0.1s cubic-bezier(0.19, 1, 0.22, 1)' }
                 }), 
                 
-                // Center Pin (Ensures the clock hands' pivot point is covered)
+                // Center Pin
                 React.createElement("div", {
                     className: "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-emerald-500 z-30"
                 }),
@@ -367,7 +380,7 @@
                 flowerAssemblyChildren
             ),
 
-            // BRANDING AREA (Updated for AGCO Co.)
+            // BRANDING AREA
             React.createElement("div", {
                 className: "w-full text-center text-sm text-gray-500 mt-4 pt-4 border-t border-gray-100"
             }, 
@@ -399,7 +412,7 @@
             ));
         };
         
-        // --- FINAL APPLICATION INITIALIZATION LOGIC ---
+        // --- FINAL APPLICATION INITIALIZATION LOGIC (Unchanged) ---
 
         const manifestContent = {
             name: "Sunflower Clockulator PWA",
